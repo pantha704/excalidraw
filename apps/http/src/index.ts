@@ -3,7 +3,7 @@ import express from "express";
 import { config as cfg } from "dotenv";
 import jwt from "jsonwebtoken";
 import { authMiddleware } from "./middleware";
-import { JWT_SECRET, PORT } from "@repo/common/config";
+import { PORT } from "@repo/common/config";
 import {
   CreateRoomSchema,
   SignInSchema,
@@ -12,6 +12,7 @@ import {
 import { prismaClient } from "@repo/db/client";
 
 cfg(); // Load environment variables from .env file
+const JWT_SECRET = process.env.JWT_SECRET as string;
 
 const app = express();
 app.use(express.json()); // To parse JSON body
@@ -49,9 +50,9 @@ app.post("/signup", async (req, res) => {
   }
 });
 
-app.post("/login", async (req, res) => {
+app.post("/signin", async (req, res) => {
   // ZOD
-  const parsedData = CreateUserSchema.safeParse(req.body);
+  const parsedData = SignInSchema.safeParse(req.body);
   if (!parsedData.success) {
     console.log(parsedData.error);
     res.json({ message: "Incorrect inputs" });
@@ -81,26 +82,15 @@ app.post("/login", async (req, res) => {
     if (!isPasswordValid) {
       res.status(401).json({
         error: "Invalid password",
-        yourPass: parsedData?.data.password,
-        correctPass: user.password,
       });
       return;
     }
 
     // JWT
-    const token = jwt.sign(
-      { userId: user?.id },
-      JWT_SECRET as string,
-      { expiresIn: "1h" },
-      (err, token) => {
-        if (err) {
-          res.status(500).send("Error signing token");
-          return;
-        }
-        // console.log(token);
-        res.json({ token });
-      }
-    );
+    const token = jwt.sign({ userId: user?.id }, JWT_SECRET, {
+      expiresIn: "1h",
+    });
+    res.json({ token });
   } catch (e) {
     res.json({
       message: "User not found",
@@ -109,8 +99,35 @@ app.post("/login", async (req, res) => {
   }
 });
 
-app.get("/create-room", authMiddleware, (req, res) => {
-  res.send("Create Room");
+app.post("/create-room", authMiddleware, async (req, res) => {
+  const parsedData = CreateRoomSchema.safeParse(req.body);
+  if (!parsedData.success) {
+    console.log(parsedData.error);
+    res.json({ message: "Incorrect inputs" });
+    return;
+  }
+
+  // Assuming authMiddleware attaches userId to req
+  const userId = (req as any).userId;
+  console.log(userId, parsedData.data?.name);
+
+  try {
+    const room = await prismaClient.room.create({
+      data: {
+        slug: parsedData.data?.name,
+        adminId: userId,
+      },
+    });
+
+    res.json({
+      roomId: room.id,
+    });
+  } catch (e) {
+    res.status(411).json({
+      message: "Room already exists or error in creating room",
+      error: e,
+    });
+  }
 });
 
 app.listen(PORT, () => {
