@@ -15,6 +15,6 @@ export const authMiddleware = (req: any, res: any, next: any) => {
         return res.status(401).json({ message: 'Invalid token' });
     }
     // @ts-ignore
-    req.user = decoded?.user; // Attach the decoded user info to the request object
+    req.userId = decoded?.userId; // Attach the decoded user info to the request object
     next();
 }
