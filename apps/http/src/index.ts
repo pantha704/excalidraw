@@ -109,7 +109,7 @@ app.post("/create-room", authMiddleware, async (req, res) => {
 
   // Assuming authMiddleware attaches userId to req
   const userId = (req as any).userId;
-  console.log(userId, parsedData.data?.name);
+  // console.log(userId, parsedData.data?.name);
 
   try {
     const room = await prismaClient.room.create({
@@ -128,6 +128,22 @@ app.post("/create-room", authMiddleware, async (req, res) => {
       error: e,
     });
   }
+});
+
+app.get("/chats/:roomId", async (req, res) => {
+  const roomId = Number(req.params.roomId);
+  const messages = await prismaClient.chat.findMany({
+    where: {
+      roomId: roomId,
+    },
+    orderBy: {
+      id: "desc",
+    },
+    take: 50,
+  });
+  res.json({
+    messages,
+  });
 });
 
 app.listen(PORT, () => {
