@@ -88,7 +88,7 @@ app.post("/signin", async (req, res) => {
 
     // JWT
     const token = jwt.sign({ userId: user?.id }, JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "1d",
     });
     res.json({ token });
   } catch (e) {
@@ -137,12 +137,27 @@ app.get("/chats/:roomId", async (req, res) => {
       roomId: roomId,
     },
     orderBy: {
-      id: "desc",
+      id: "asc",
     },
     take: 50,
   });
   res.json({
-    messages,
+    chats: messages, // Passing the chats for a given roomId
+  });
+});
+
+app.get("/room/:slug", async (req, res) => {
+  const slug = req.params.slug;
+  const room = await prismaClient.room.findFirst({
+    where: {
+      slug: slug,
+    },
+    select: {
+      id: true,
+    },
+  });
+  res.json({
+    roomId: room?.id, // Passing the roomId for a given slug
   });
 });
 

@@ -74,7 +74,7 @@ wss.on("connection", (ws, request) => {
       const user = users.find((x) => x.ws === ws);
       if (user && !user.rooms.includes(parsedData.roomId)) {
         user.rooms.push(parsedData.roomId);
-        console.log(`User joined room: ${parsedData.roomId}`);
+        // console.log(`User joined room: ${parsedData.roomId}`);
       }
       console.log("Updated user rooms for " + user?.userId + " :", user!.rooms);
     }
@@ -88,11 +88,19 @@ wss.on("connection", (ws, request) => {
 
     if (parsedData.type === "chat") {
       const roomId = parsedData.roomId;
-      const msg = parsedData.msg;
+      const msg = parsedData.message;
       const sender = users.find((x) => x.ws === ws);
       if (sender && sender.rooms.includes(roomId)) {
         users.forEach(async (user) => {
           try {
+            // console.log(
+            //   JSON.stringify({
+            //     roomId: Number(roomId),
+            //     userId: userId,
+            //     message: msg,
+            //   })
+            // );
+
             await prismaClient.chat.create({
               data: {
                 roomId: Number(roomId),
@@ -103,7 +111,7 @@ wss.on("connection", (ws, request) => {
           } catch (e) {
             ws.send(
               JSON.stringify({
-                message: "Database creation error",
+                message: "Database creation/params error",
                 error: e,
               })
             );

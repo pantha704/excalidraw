@@ -4,3 +4,6 @@ packages:
 
 ignoredBuiltDependencies:
   - '@prisma/client'
+
+onlyBuiltDependencies:
+  - bcrypt
